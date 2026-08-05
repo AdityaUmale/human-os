@@ -1,5 +1,5 @@
 import path from "node:path";
-import swisseph from "swisseph";
+import swisseph from "swisseph-v2";
 
 const IST_OFFSET_HOURS = 5.5;
 const IST_OFFSET_MS = IST_OFFSET_HOURS * 60 * 60 * 1000;

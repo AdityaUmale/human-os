@@ -22,7 +22,7 @@
     "pg": "^8.22.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "swisseph": "^0.5.17",
+    "swisseph-v2": "^1.1.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["swisseph"],
+  serverExternalPackages: ["swisseph-v2"],
   outputFileTracingIncludes: {
     "/*": ["./public/ephe/**/*"],
   },
