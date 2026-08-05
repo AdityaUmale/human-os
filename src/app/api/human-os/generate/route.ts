@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
+import { after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { generateHumanOsForUser } from "@/lib/human-os/generate";
+
+export const maxDuration = 300;
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const birthSchema = z.object({
   fullName: z.string().min(1),
@@ -16,12 +21,12 @@ const birthSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const user = await requireUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const user = await requireUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = birthSchema.parse(await request.json());
 
     await prisma.birthDetails.upsert({
@@ -63,9 +68,13 @@ export async function POST(request: Request) {
       });
     }
 
-    // Fire-and-forget generation (same process); client polls status
-    void generateHumanOsForUser(user.id).catch((err) => {
-      console.error("Human OS generation failed", err);
+    // Background generation after the response is sent; keeps running on Vercel
+    after(async () => {
+      try {
+        await generateHumanOsForUser(user.id);
+      } catch (err) {
+        console.error("Human OS generation failed", err);
+      }
     });
 
     return NextResponse.json({ status: "GENERATING" });
