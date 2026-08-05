@@ -1,0 +1,32 @@
+import { Langfuse } from "langfuse";
+import { getServerEnv } from "@/lib/env";
+
+let langfuseClient: Langfuse | null = null;
+
+export function getLangfuseClient(): Langfuse {
+  if (langfuseClient) return langfuseClient;
+
+  const env = getServerEnv();
+  langfuseClient = new Langfuse({
+    publicKey: env.LANGFUSE_PUBLIC_KEY,
+    secretKey: env.LANGFUSE_SECRET_KEY,
+    baseUrl: env.LANGFUSE_BASE_URL,
+  });
+
+  return langfuseClient;
+}
+
+export function getPromptNames() {
+  const env = getServerEnv();
+  return {
+    HUMAN_OS_COMPILER: env.LANGFUSE_PROMPT_HUMAN_OS_COMPILER,
+    IDENTITY_RENDERER: env.LANGFUSE_PROMPT_IDENTITY_RENDERER,
+    MIND_RENDERER: env.LANGFUSE_PROMPT_MIND_RENDERER,
+    EMOTIONS_RENDERER: env.LANGFUSE_PROMPT_EMOTIONS_RENDERER,
+    RELATIONSHIPS_RENDERER: env.LANGFUSE_PROMPT_RELATIONSHIPS_RENDERER,
+    ENERGY_RENDERER: env.LANGFUSE_PROMPT_ENERGY_RENDERER,
+    WORK_RENDERER: env.LANGFUSE_PROMPT_WORK_RENDERER,
+    GROWTH_RENDERER: env.LANGFUSE_PROMPT_GROWTH_RENDERER,
+    SEASON_RENDERER: env.LANGFUSE_PROMPT_SEASON_RENDERER,
+  } as const;
+}

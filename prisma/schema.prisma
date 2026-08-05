@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum HumanOsStatus {
+  GENERATING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  phone         String   @unique
+  phoneVerified Boolean  @default(false)
+  name          String?
+  creditBalance Int      @default(12)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  birthDetails BirthDetails?
+  astSnapshots AstSnapshot[]
+  humanOs      HumanOsProfile?
+  insights     InsightRender[]
+  feedback     InsightFeedback[]
+}
+
+model BirthDetails {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  fullName    String
+  dateOfBirth String
+  timeOfBirth String?
+  timeUnknown Boolean  @default(false)
+  placeName   String
+  lat         Float
+  lng         Float
+  timezone    String   @default("Asia/Kolkata")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AstSnapshot {
+  id           String   @id @default(cuid())
+  userId       String
+  rulesVersion String   @default("v0.2")
+  payload      Json
+  createdAt    DateTime @default(now())
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  humanOs HumanOsProfile?
+
+  @@index([userId])
+}
+
+model HumanOsProfile {
+  id            String        @id @default(cuid())
+  userId        String        @unique
+  astSnapshotId String        @unique
+  status        HumanOsStatus @default(GENERATING)
+  profile       Json?
+  model         String?
+  promptName    String?
+  promptVersion String?
+  error         String?
+  completedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  astSnapshot AstSnapshot     @relation(fields: [astSnapshotId], references: [id], onDelete: Cascade)
+  insights    InsightRender[]
+}
+
+model InsightRender {
+  id            String   @id @default(cuid())
+  userId        String
+  humanOsId     String
+  domain        String
+  insightKey    String
+  layout        String
+  payload       Json
+  model         String?
+  promptName    String?
+  promptVersion String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  humanOs HumanOsProfile @relation(fields: [humanOsId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, domain, insightKey, humanOsId])
+  @@index([userId, domain])
+}
+
+model InsightFeedback {
+  id              String   @id @default(cuid())
+  userId          String
+  domain          String
+  insightKey      String
+  rating          String
+  humanOsVersion  String?
+  rendererVersion String?
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, domain, insightKey])
+}

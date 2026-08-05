@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Human OS Decoder (V1 slice)
 
-## Getting Started
+Phone (no OTP) → Birth → Generate Human OS → Map → Identity insights.
 
-First, run the development server:
+## Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+1. **Supabase** project (Postgres)
+2. **OpenRouter** API key
+3. **Langfuse** project with Human OS Compiler + Identity Renderer prompts
+4. Node 20+
+
+## Env variables
+
+Copy `.env.example` → `.env` and fill:
+
+| Variable | Where to get it | Required |
+|----------|-----------------|----------|
+| `DATABASE_URL` | Supabase → Project Settings → Database → Connection string (URI). Use **Session mode** port `5432` for Prisma. | Yes |
+| `OPENROUTER_API_KEY` | [openrouter.ai/keys](https://openrouter.ai/keys) | Yes |
+| `OPENROUTER_BASE_URL` | Default `https://openrouter.ai/api/v1` | Optional |
+| `OPENROUTER_MODEL` | e.g. `openai/gpt-4o` | Optional |
+| `LANGFUSE_PUBLIC_KEY` | Langfuse project → Settings → API Keys | Yes |
+| `LANGFUSE_SECRET_KEY` | Same | Yes |
+| `LANGFUSE_BASE_URL` | `https://cloud.langfuse.com` (or EU/self-host URL) | Yes |
+| `LANGFUSE_PROMPT_HUMAN_OS_COMPILER` | Exact prompt name in Langfuse | Yes |
+| `LANGFUSE_PROMPT_IDENTITY_RENDERER` | Exact prompt name in Langfuse | Yes |
+| `SESSION_SECRET` | Random string (`openssl rand -hex 32`) | Yes |
+| `APP_URL` | `http://localhost:3000` | Optional |
+
+**Not required for this build:** Supabase Auth keys, Twilio, Google OAuth (phone session is our own cookie).
+
+### Supabase `DATABASE_URL` tips
+
+1. Create project → wait until healthy  
+2. **Project Settings → Database**  
+3. Copy **URI** under Connection string  
+4. Replace `[YOUR-PASSWORD]` with the DB password you set at create time  
+5. Prefer **Session mode** host/port (`5432`) for `prisma db push`  
+6. If the password has special characters, URL-encode them  
+
+Example shape:
+
+```
+postgresql://postgres.abcdefghijk:YOUR_PASSWORD@aws-0-ap-south-1.pooler.supabase.com:5432/postgres
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup commands
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cd human-os-decoder
+cp .env.example .env
+# edit .env
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+npm install
+npx prisma db push      # creates tables on Supabase
+npm run dev
+```
 
-## Learn More
+Open **http://localhost:3000/login**
 
-To learn more about Next.js, take a look at the following resources:
+## Domains
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+After Human OS compile, each domain runs its Langfuse renderer (sequential). Override names in `.env`:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Domain | Env var | Default prompt name |
+|--------|---------|---------------------|
+| Identity | `LANGFUSE_PROMPT_IDENTITY_RENDERER` | Identity Renderer v1.0 |
+| Mind | `LANGFUSE_PROMPT_MIND_RENDERER` | Mind Renderer v1.0 |
+| Emotions | `LANGFUSE_PROMPT_EMOTIONS_RENDERER` | Emotions Renderer v1.0 |
+| Relationships | `LANGFUSE_PROMPT_RELATIONSHIPS_RENDERER` | Relationship Renderer v1.0 |
+| Energy | `LANGFUSE_PROMPT_ENERGY_RENDERER` | Energy Renderer v1.0 |
+| Work | `LANGFUSE_PROMPT_WORK_RENDERER` | Work Renderer v1.0 |
+| Growth | `LANGFUSE_PROMPT_GROWTH_RENDERER` | Growth Renderer v1.0 |
+| Season | `LANGFUSE_PROMPT_SEASON_RENDERER` | Season Renderer v1.0 |
 
-## Deploy on Vercel
+Routes: `/map/{domain}` TOC · `/map/{domain}/{insight}` page · `POST /api/insights/{domain}/rerender`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Full generation can take several minutes (1 compiler + 8 renderers).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Test checklist
+
+1. Enter any 10-digit phone → Continue  
+2. Birth details: name, DOB, time (or unknown), search place, timezone  
+3. Generate My Human OS → wait for loading to finish  
+4. Map → open any domain (Identity, Mind, Relationships, …)  
+5. Read insights; use **Re-render** on TOC if a domain failed  
+6. Submit feedback  
+
+If generation fails: check generating-screen error (usually Langfuse prompt name or OpenRouter).
+
+## Stack notes
+
+- Auth: signed cookie session (no Supabase Auth / OTP yet)  
+- DB: Prisma + Postgres (Supabase)  
+- Chart: Swiss Ephemeris (`public/ephe`)  
+- LLM: OpenRouter + Langfuse prompts  
