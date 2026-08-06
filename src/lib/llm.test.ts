@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPromptVariables } from "@/lib/llm";
+import { buildPromptVariables, getOpenRouterMaxTokens } from "@/lib/llm";
 
 describe("Langfuse prompt variables", () => {
   it("keeps Human OS and AST inputs separate", () => {
@@ -16,5 +16,9 @@ describe("Langfuse prompt variables", () => {
     expect(JSON.parse(vars.humanOsProfileB)).toEqual({ id: "b" });
     expect(JSON.parse(vars.astA)).toEqual({ id: "ast-a" });
     expect(JSON.parse(vars.astB)).toEqual({ id: "ast-b" });
+  });
+
+  it("keeps the default completion request within a small OpenRouter balance", () => {
+    expect(getOpenRouterMaxTokens()).toBeLessThanOrEqual(3_000);
   });
 });

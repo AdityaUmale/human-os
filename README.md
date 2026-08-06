@@ -15,10 +15,12 @@ Copy `.env.example` → `.env` and fill:
 
 | Variable | Where to get it | Required |
 |----------|-----------------|----------|
-| `DATABASE_URL` | Supabase → Project Settings → Database → Connection string (URI). Use **Session mode** port `5432` for Prisma. | Yes |
+| `DATABASE_URL` | Supabase → Project Settings → Database → Connection string (URI). Use **Transaction mode** port `6543` for Vercel/runtime; use Session mode `5432` for migrations. | Yes |
+| `PG_POOL_MAX` | Maximum Postgres clients per server instance. Defaults to `1` for serverless safety. | Optional |
 | `OPENROUTER_API_KEY` | [openrouter.ai/keys](https://openrouter.ai/keys) | Yes |
 | `OPENROUTER_BASE_URL` | Default `https://openrouter.ai/api/v1` | Optional |
 | `OPENROUTER_MODEL` | e.g. `openai/gpt-4o` | Optional |
+| `OPENROUTER_MAX_TOKENS` | Completion token cap; defaults to `3000` for low-balance accounts | Optional |
 | `LANGFUSE_PUBLIC_KEY` | Langfuse project → Settings → API Keys | Yes |
 | `LANGFUSE_SECRET_KEY` | Same | Yes |
 | `LANGFUSE_BASE_URL` | `https://cloud.langfuse.com` (or EU/self-host URL) | Yes |
@@ -35,7 +37,7 @@ Copy `.env.example` → `.env` and fill:
 2. **Project Settings → Database**  
 3. Copy **URI** under Connection string  
 4. Replace `[YOUR-PASSWORD]` with the DB password you set at create time  
-5. Prefer **Session mode** host/port (`5432`) for `prisma db push`  
+5. Use **Transaction mode** host/port (`6543`) for Vercel/runtime traffic. Use **Session mode** (`5432`) for `prisma db push` and other migrations.
 6. If the password has special characters, URL-encode them  
 
 Example shape:
@@ -43,6 +45,8 @@ Example shape:
 ```
 postgresql://postgres.abcdefghijk:YOUR_PASSWORD@aws-0-ap-south-1.pooler.supabase.com:5432/postgres
 ```
+
+For a Vercel deployment, set its `DATABASE_URL` to the same Supabase pooler host on port `6543` (Transaction mode), then redeploy. The application also caps each server instance at one client by default; override `PG_POOL_MAX` only when your database pool allows it.
 
 ## Setup commands
 

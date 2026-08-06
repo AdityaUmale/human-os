@@ -13,6 +13,7 @@ interface OpenRouterResponse {
 }
 
 const TIMEOUT_MS = 180_000;
+const DEFAULT_MAX_TOKENS = 3_000;
 const LANGFUSE_CACHE_TTL_SECONDS = 60;
 const LANGFUSE_FETCH_TIMEOUT_MS = 15_000;
 
@@ -53,6 +54,11 @@ export function extractJson(raw: string): string {
   return trimmed;
 }
 
+export function getOpenRouterMaxTokens() {
+  const configured = Number.parseInt(process.env.OPENROUTER_MAX_TOKENS ?? "", 10);
+  return Number.isInteger(configured) && configured >= 256 ? configured : DEFAULT_MAX_TOKENS;
+}
+
 /**
  * OpenAI JSON mode requires the word "json" somewhere in the messages.
  * Langfuse prompts often omit it, so we inject a short instruction when missing.
@@ -74,7 +80,7 @@ function ensureJsonModeMessages(messages: LLMMessage[]): LLMMessage[] {
 export async function callOpenRouter(
   messages: LLMMessage[],
   temperature = 0.7,
-  maxTokens = 16384,
+  maxTokens = getOpenRouterMaxTokens(),
 ): Promise<{ content: string; model: string }> {
   const env = getServerEnv();
   const finalMessages = ensureJsonModeMessages(messages);

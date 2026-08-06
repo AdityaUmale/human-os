@@ -10,7 +10,7 @@
 
 1. **Project Settings** (gear) → **Database**
 2. **Connection string** → **URI**
-3. Choose **Session mode** (port **5432**) if available — best for Prisma `db push`
+3. Choose **Session mode** (port **5432**) for Prisma `db push`; use **Transaction mode** (port **6543**) for Vercel/runtime traffic
 4. Replace `[YOUR-PASSWORD]` with the password from step 1
 5. If the password has `@`, `#`, `/`, etc., URL-encode it
 
@@ -27,11 +27,13 @@ You do **not** need Supabase Auth keys for this build (login is our own phone co
 ```bash
 # Database
 DATABASE_URL=                 # from Supabase (above)
+PG_POOL_MAX=1                 # optional; keep low for serverless
 
 # OpenRouter — https://openrouter.ai/keys
 OPENROUTER_API_KEY=
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_MODEL=openai/gpt-4o
+OPENROUTER_MAX_TOKENS=3000
 
 # Langfuse — Project → Settings → API Keys
 LANGFUSE_PUBLIC_KEY=          # pk-lf-...
