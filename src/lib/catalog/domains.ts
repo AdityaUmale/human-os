@@ -411,7 +411,7 @@ export const DOMAIN_CATALOG: DomainConfig[] = [
     title: "Energy",
     mapDesc: "What fuels you.",
     subtitle: "What fuels you and what drains you.",
-    available: false, // no Langfuse prompt yet — skip render + hide from map links
+    available: true,
     profileKey: "energy",
     promptEnvKey: "ENERGY_RENDERER",
     defaultPromptName: "Energy Renderer v1.0",

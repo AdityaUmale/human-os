@@ -133,7 +133,7 @@ export async function renderIdentityInsights(userId: string) {
 }
 
 /**
- * Render every *available* domain. Energy (and any available:false) is skipped.
+ * Render every available domain. Domains without a configured renderer remain disabled in the catalog.
  */
 export async function renderAllDomains(userId: string) {
   const results: Array<{ domain: string; ok: boolean; error?: string; renderedKeys?: string[] }> =
