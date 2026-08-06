@@ -12,6 +12,28 @@ enum HumanOsStatus {
   FAILED
 }
 
+enum SubjectKind {
+  SELF
+  PERSON
+}
+
+enum DecodeKind {
+  PARTNER
+  BOSS
+  PARENT
+  CHILD
+  EMPLOYEE
+  COLLEAGUE
+  LOVE_COMPAT
+  WORK_COMPAT
+}
+
+enum DecodeStatus {
+  GENERATING
+  COMPLETED
+  FAILED
+}
+
 model User {
   id            String   @id @default(cuid())
   phone         String   @unique
@@ -26,6 +48,10 @@ model User {
   humanOs      HumanOsProfile?
   insights     InsightRender[]
   feedback     InsightFeedback[]
+  subjects     Subject[]             @relation("OwnedSubjects")
+  selfSubject  Subject?              @relation("SelfSubject")
+  decodes      Decode[]              @relation("OwnedDecodes")
+  transactions CreditTransaction[]
 }
 
 model BirthDetails {
@@ -111,4 +137,143 @@ model InsightFeedback {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, domain, insightKey])
+}
+
+/// A reusable Human OS subject. SELF subjects point at the existing User
+/// birth/Human OS rows; PERSON subjects own their own birth, AST, and profile.
+model Subject {
+  id           String      @id @default(cuid())
+  ownerUserId  String
+  kind         SubjectKind
+  displayName  String
+  sourceUserId String?     @unique
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  owner          User                    @relation("OwnedSubjects", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  sourceUser     User?                   @relation("SelfSubject", fields: [sourceUserId], references: [id], onDelete: Cascade)
+  birthDetails   PersonBirthDetails?
+  astSnapshots   SubjectAstSnapshot[]
+  humanOs        SubjectHumanOsProfile?
+  primaryDecodes Decode[]                @relation("DecodePrimarySubject")
+  secondaryDecodes Decode[]              @relation("DecodeSecondarySubject")
+
+  @@index([ownerUserId, kind])
+}
+
+model PersonBirthDetails {
+  id          String   @id @default(cuid())
+  subjectId   String   @unique
+  fullName    String
+  dateOfBirth String
+  timeOfBirth String?
+  timeUnknown Boolean  @default(false)
+  placeName   String
+  lat         Float
+  lng         Float
+  timezone    String   @default("Asia/Kolkata")
+  fingerprint String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@index([subjectId, fingerprint])
+}
+
+model SubjectAstSnapshot {
+  id           String   @id @default(cuid())
+  subjectId    String
+  rulesVersion String   @default("v0.2")
+  payload      Json
+  createdAt    DateTime @default(now())
+
+  subject Subject                 @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  humanOs SubjectHumanOsProfile?
+
+  @@index([subjectId])
+}
+
+model SubjectHumanOsProfile {
+  id            String        @id @default(cuid())
+  subjectId     String        @unique
+  astSnapshotId String        @unique
+  status        HumanOsStatus @default(GENERATING)
+  profile       Json?
+  model         String?
+  promptName    String?
+  promptVersion String?
+  error         String?
+  completedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  subject     Subject             @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  astSnapshot SubjectAstSnapshot   @relation(fields: [astSnapshotId], references: [id], onDelete: Cascade)
+  decodes     Decode[]
+}
+
+model Decode {
+  id                String        @id @default(cuid())
+  ownerUserId       String
+  kind              DecodeKind
+  identityKey       String
+  primarySubjectId  String
+  secondarySubjectId String?
+  status            DecodeStatus  @default(GENERATING)
+  error             String?
+  model             String?
+  promptName        String?
+  promptVersion     String?
+  completedAt       DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  owner           User                    @relation("OwnedDecodes", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  primarySubject  Subject                 @relation("DecodePrimarySubject", fields: [primarySubjectId], references: [id], onDelete: Cascade)
+  secondarySubject Subject?               @relation("DecodeSecondarySubject", fields: [secondarySubjectId], references: [id], onDelete: Cascade)
+  humanOs         SubjectHumanOsProfile?  @relation(fields: [humanOsId], references: [id], onDelete: SetNull)
+  humanOsId       String?
+  insights        DecodeInsight[]
+
+  @@unique([ownerUserId, identityKey])
+  @@index([ownerUserId, kind])
+  @@index([primarySubjectId])
+  @@index([secondarySubjectId])
+}
+
+model DecodeInsight {
+  id              String   @id @default(cuid())
+  decodeId        String
+  insightKey      String
+  ordinal         Int
+  title           String
+  description     String
+  layout          String
+  payload         Json
+  unlockCost      Int      @default(2)
+  unlockedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  decode       Decode             @relation(fields: [decodeId], references: [id], onDelete: Cascade)
+  transaction CreditTransaction?
+
+  @@unique([decodeId, insightKey])
+  @@index([decodeId, ordinal])
+}
+
+model CreditTransaction {
+  id             String   @id @default(cuid())
+  userId         String
+  decodeInsightId String   @unique
+  idempotencyKey String   @unique
+  amount         Int
+  reason         String
+  createdAt      DateTime @default(now())
+
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  decodeInsight DecodeInsight @relation(fields: [decodeInsightId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

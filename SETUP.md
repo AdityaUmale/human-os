@@ -40,6 +40,14 @@ LANGFUSE_BASE_URL=https://cloud.langfuse.com
 # Exact names as shown in Langfuse prompt library:
 LANGFUSE_PROMPT_HUMAN_OS_COMPILER=HUMAN OS COMPILER v1.0
 LANGFUSE_PROMPT_IDENTITY_RENDERER=Identity Renderer v1.0
+LANGFUSE_PROMPT_PARTNER_RENDERER=Partner Decoder Renderer
+LANGFUSE_PROMPT_BOSS_RENDERER=Boss Decoder Renderer
+LANGFUSE_PROMPT_PARENT_RENDERER=Parent Decoder Renderer
+LANGFUSE_PROMPT_CHILD_RENDERER=Child Decoder Renderer
+LANGFUSE_PROMPT_EMPLOYEE_RENDERER=Employee Decoder Renderer
+LANGFUSE_PROMPT_COLLEAGUE_RENDERER=Colleague Decoder Renderer
+LANGFUSE_PROMPT_LOVE_COMPAT_RENDERER=Love Compatibility Renderer
+LANGFUSE_PROMPT_WORK_COMPAT_RENDERER=Work Compatibility Renderer
 
 # App
 SESSION_SECRET=               # run: openssl rand -hex 32
@@ -88,3 +96,4 @@ Open: **http://localhost:3000/login**
 **Table Editor** should show after `db push`:
 
 - `User`, `BirthDetails`, `AstSnapshot`, `HumanOsProfile`, `InsightRender`, `InsightFeedback`
+- `Subject`, `PersonBirthDetails`, `SubjectAstSnapshot`, `SubjectHumanOsProfile`, `Decode`, `DecodeInsight`, `CreditTransaction`

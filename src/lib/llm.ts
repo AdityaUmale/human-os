@@ -21,12 +21,28 @@ const PLACEHOLDERS = [
   "inputJson",
   "ast",
   "astJson",
+  "AST",
   "humanOs",
   "human_os",
+  "HumanOS",
   "identity",
   "profile",
   "userInput",
   "user_input",
+  "humanOsProfile",
+  "human_os_profile",
+  "HumanOSProfile",
+  "astProfile",
+  "humanOsProfileA",
+  "human_os_profile_a",
+  "HumanOSProfileA",
+  "humanOsProfileB",
+  "human_os_profile_b",
+  "HumanOSProfileB",
+  "astA",
+  "astB",
+  "ASTA",
+  "ASTB",
 ];
 
 export function extractJson(raw: string): string {
@@ -100,20 +116,52 @@ export async function callOpenRouter(
   return { content, model };
 }
 
-function buildVariables(payload: unknown): Record<string, string> {
+export function buildPromptVariables(payload: unknown): Record<string, string> {
   const json = JSON.stringify(payload, null, 2);
   const record =
     payload && typeof payload === "object" ? (payload as Record<string, unknown>) : {};
 
+  const value = (...keys: string[]) => {
+    for (const key of keys) {
+      if (key in record && record[key] !== undefined && record[key] !== null) {
+        return JSON.stringify(record[key], null, 2);
+      }
+    }
+    return json;
+  };
+
+  const ast = value("ast", "AST", "astProfile");
+  const humanOs = value("human_os", "humanOs", "humanOsProfile", "profile");
+  const astA = value("astA", "ASTA", "ast_a");
+  const astB = value("astB", "ASTB", "ast_b");
+  const humanOsA = value("humanOsProfileA", "human_os_profile_a", "profileA", "humanOsA");
+  const humanOsB = value("humanOsProfileB", "human_os_profile_b", "profileB", "humanOsB");
+
   const vars: Record<string, string> = {
     input: json,
     inputJson: json,
-    ast: json,
-    astJson: json,
-    humanOs: json,
-    human_os: json,
+    ast,
+    astJson: ast,
+    AST: ast,
+    humanOs,
+    human_os: humanOs,
+    HumanOS: humanOs,
+    humanOsProfile: humanOs,
+    human_os_profile: humanOs,
+    HumanOSProfile: humanOs,
+    astProfile: ast,
+    humanOsProfileA: humanOsA,
+    human_os_profile_a: humanOsA,
+    HumanOSProfileA: humanOsA,
+    humanOsProfileB: humanOsB,
+    human_os_profile_b: humanOsB,
+    HumanOSProfileB: humanOsB,
+    astA,
+    astB,
+    ASTA: astA,
+    ASTB: astB,
     identity: "identity" in record ? JSON.stringify(record.identity, null, 2) : json,
-    profile: json,
+    profile: humanOs,
     userInput: json,
     user_input: json,
   };
@@ -157,7 +205,7 @@ export async function buildLangfuseMessages(
     throw new Error(`Langfuse prompt "${promptName}" resolved to a fallback prompt.`);
   }
 
-  const variables = buildVariables(payload);
+  const variables = buildPromptVariables(payload);
   const inputMessage = variables.input;
   const placeholders: Record<string, LLMMessage[]> = Object.fromEntries(
     PLACEHOLDERS.map((name) => [
@@ -196,23 +244,38 @@ export async function runJsonPrompt(
   promptName: string,
   payload: unknown,
   temperature = 0.7,
-  options?: { outputContract?: string },
+  options?: { outputContract?: string; retries?: number },
 ): Promise<{ data: unknown; model: string; promptName: string }> {
-  const messages = await buildLangfuseMessages(promptName, payload);
+  const attempts = Math.max(0, options?.retries ?? 0) + 1;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const messages = await buildLangfuseMessages(promptName, payload);
 
-  if (options?.outputContract?.trim()) {
-    messages.push({
-      role: "user",
-      content: options.outputContract.trim(),
-    });
-  }
+      if (options?.outputContract?.trim()) {
+        messages.push({
+          role: "user",
+          content: options.outputContract.trim(),
+        });
+      }
+      if (attempt > 0) {
+        messages.push({
+          role: "user",
+          content: "Your previous response was invalid. Return only a complete JSON object matching the required output contract.",
+        });
+      }
 
-  const { content, model } = await callOpenRouter(messages, temperature);
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(extractJson(content));
-  } catch {
-    throw new Error(`Prompt "${promptName}" returned invalid JSON.`);
+      const { content, model } = await callOpenRouter(messages, temperature);
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(extractJson(content));
+      } catch {
+        throw new Error(`Prompt "${promptName}" returned invalid JSON.`);
+      }
+      return { data: parsed, model, promptName };
+    } catch (error) {
+      lastError = error;
+    }
   }
-  return { data: parsed, model, promptName };
+  throw lastError instanceof Error ? lastError : new Error(`Prompt "${promptName}" failed.`);
 }

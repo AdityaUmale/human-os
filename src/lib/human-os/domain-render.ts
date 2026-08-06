@@ -22,9 +22,10 @@ export async function renderDomainInsights(userId: string, domainKey: DomainKey)
 
   const humanOs = await prisma.humanOsProfile.findUnique({
     where: { userId },
+    include: { astSnapshot: true },
   });
 
-  if (!humanOs || humanOs.status !== "COMPLETED" || !humanOs.profile) {
+  if (!humanOs || humanOs.status !== "COMPLETED" || !humanOs.profile || !humanOs.astSnapshot) {
     throw new Error("Human OS profile is not ready.");
   }
 
@@ -36,7 +37,10 @@ export async function renderDomainInsights(userId: string, domainKey: DomainKey)
   // Pass full profile (renderers may use other domains for context)
   const promptInput = {
     human_os: profile,
+    humanOsProfile: profile,
     profile,
+    ast: humanOs.astSnapshot.payload,
+    AST: humanOs.astSnapshot.payload,
     [domain.profileKey]: profile[domain.profileKey] ?? null,
     // also top-level for prompts that expect flat input
     ...profile,

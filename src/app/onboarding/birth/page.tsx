@@ -31,7 +31,6 @@ export default function BirthDetailsPage() {
 
   useEffect(() => {
     if (placeQuery.trim().length < 2) {
-      setResults([]);
       return;
     }
     const t = setTimeout(async () => {
@@ -148,6 +147,7 @@ export default function BirthDetailsPage() {
           onChange={(e) => {
             setPlace(null);
             setPlaceQuery(e.target.value);
+            setResults([]);
           }}
           className="field-input"
         />

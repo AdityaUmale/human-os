@@ -1,12 +1,12 @@
 # Human OS Decoder (V1 slice)
 
-Phone (no OTP) → Birth → Generate Human OS → Map → Identity insights.
+Phone (no OTP) → Birth → Generate Human OS → Map, People, and Interactions.
 
 ## Prerequisites
 
 1. **Supabase** project (Postgres)
 2. **OpenRouter** API key
-3. **Langfuse** project with Human OS Compiler + Identity Renderer prompts
+3. **Langfuse** project with Human OS Compiler, Map renderers, People renderers, and Interaction renderers
 4. Node 20+
 
 ## Env variables
@@ -77,6 +77,11 @@ Routes: `/map/{domain}` TOC · `/map/{domain}/{insight}` page · `POST /api/insi
 
 Full generation can take several minutes (1 compiler + 8 renderers).
 
+People renderers produce four insights. Love and Work Compatibility produce
+three. Set the eight `LANGFUSE_PROMPT_*` People/Interaction variables to the
+exact prompt names in Langfuse before generating a saved person or interaction.
+Each insight costs 2 credits to unlock once; generation itself is free.
+
 ## Test checklist
 
 1. Enter any 10-digit phone → Continue  
@@ -85,6 +90,9 @@ Full generation can take several minutes (1 compiler + 8 renderers).
 4. Map → open any domain (Identity, Mind, Relationships, …)  
 5. Read insights; use **Re-render** on TOC if a domain failed  
 6. Submit feedback  
+
+For the People and Interaction slice, run `npm test`, `npm run lint`, and
+`npm run build` before shipping.
 
 If generation fails: check generating-screen error (usually Langfuse prompt name or OpenRouter).
 
